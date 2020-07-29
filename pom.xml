@@ -118,5 +118,13 @@
             <version>1.15.2-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+
+        <dependency>
+            <groupId>com.reinforcedmc.gameapi</groupId>
+            <artifactId>GameAPI</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/libs/GameAPI.jar</systemPath>
+        </dependency>
     </dependencies>
 </project>

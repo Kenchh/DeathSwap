@@ -1,5 +1,9 @@
 package com.reinforcedmc.deathswap;
 
+import com.reinforcedmc.gameapi.GameAPI;
+import com.reinforcedmc.gameapi.GameStatus;
+import com.reinforcedmc.gameapi.events.GameSetupEvent;
+import com.reinforcedmc.gameapi.events.GameStartEvent;
 import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -7,10 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerPortalEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -30,7 +31,6 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         log("Enabled!");
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
 
-        start();
     }
 
     @Override
@@ -38,19 +38,26 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         log("Disabled!");
     }
 
+    @EventHandler
+    public void onStart(GameStartEvent e) {
+        start();
+    }
+
     public void start() {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (Bukkit.getOnlinePlayers().size() > 2) {
+                if (Bukkit.getOnlinePlayers().size() > 1) {
                     Bukkit.getOnlinePlayers().forEach((p) -> ingame.add(p.getUniqueId()));
 
-                    swap = new Swap(5);
+                    swap = new Swap(15);
                     swap.start();
 
-                    Bukkit.broadcastMessage(ChatColor.RED + ChatColor.BOLD.toString() + "Death Swap has started. Last one to survive wins!");
+                    Bukkit.broadcastMessage(GameAPI.getInstance().currentGame.getPrefix() + ChatColor.GRAY + " has started. " + ChatColor.YELLOW + "Last one to survive wins!");
 
                     this.cancel();
+                } else {
+                    update();
                 }
             }
         }.runTaskTimer(this, 0, 1);
@@ -82,9 +89,11 @@ public final class DeathSwap extends JavaPlugin implements Listener {
                     maxtries--;
                 }
             } else {
-                while ((tp.equals(uuid) || reserved.contains(tp)) && maxtries > 0) {
-                    tp = ingame.get(new Random().nextInt(ingame.size()));
-                    maxtries--;
+                for(Player pp : Bukkit.getOnlinePlayers()) {
+                    if(!p.getUniqueId().equals(pp.getUniqueId())) {
+                        tp = pp.getUniqueId();
+                        break;
+                    }
                 }
             }
             players.put(p, Bukkit.getPlayer(tp));
@@ -107,6 +116,13 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         }
 
         return alive;
+    }
+
+    @EventHandler
+    public void onMove(PlayerMoveEvent e) {
+        if(GameAPI.getInstance().status == GameStatus.POSTCOUNTDOWN && e.getFrom().distance(e.getTo()) != 0) {
+            e.setCancelled(true);
+        }
     }
 
     /*
@@ -138,7 +154,6 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         if (!(e.getDamager() instanceof Player)) return;
 
         e.setCancelled(true);
-        e.getDamager().sendMessage(ChatColor.RED + "PvP is disabled in Death Swap!");
     }
 
     @EventHandler
@@ -173,8 +188,16 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
             Player winner = getAlive().get(0);
             swap.cancel();
+            ingame.clear();
+            GameAPI.getInstance().getAPI().endGame(winner);
 
         }
+
+        if(ingame.isEmpty()) {
+            swap.cancel();
+            GameAPI.getInstance().getAPI().endGame(null);
+        }
+
     }
 
     @EventHandler

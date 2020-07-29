@@ -1,5 +1,6 @@
 package com.reinforcedmc.deathswap;
 
+import com.reinforcedmc.gameapi.GameAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Sound;
@@ -38,7 +39,15 @@ public class Swap extends BukkitRunnable {
             if (remaining <= 5) {
                 String text = String.format(ChatColor.RED + ChatColor.BOLD.toString() + "Death Swap will ocurr in %s seconds.", remaining);
                 Bukkit.broadcastMessage(text);
-                Bukkit.getOnlinePlayers().forEach((p) -> p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1F, 1F));
+                for(int i=0;i<=3;i++) {
+                    Bukkit.getOnlinePlayers().forEach((p) -> p.playSound(p.getLocation(), Sound.BLOCK_STONE_PLACE, 1F, 0.6F));
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            Bukkit.getOnlinePlayers().forEach((p) -> p.playSound(p.getLocation(), Sound.BLOCK_STONE_PLACE, 1F, 0.1F));
+                        }
+                    }.runTaskLater(GameAPI.getInstance(), 5L);
+                }
             }
 
             remaining--;
