@@ -1,0 +1,7 @@
+name: DeathSwap
+version: ${project.version}
+main: com.reinforcedmc.deathswap.DeathSwap
+api-version: 1.15
+load: STARTUP
+authors: [rey, freakz]
+website: https://reinforcedmc.com/
