@@ -76,12 +76,13 @@ public final class DeathSwap extends JavaPlugin implements Listener {
             int maxtries = 3;
             UUID tp = p.getUniqueId();
             if(ingame.size() >= 3) {
+                /* Loop, that searches for a valid player to teleport to. */
                 while ((tp.equals(uuid) || reserved.contains(tp) || (players.containsKey(Bukkit.getPlayer(tp)) && players.get(Bukkit.getPlayer(tp)).getUniqueId() == uuid)) && maxtries > 0) {
                     tp = ingame.get(new Random().nextInt(ingame.size()));
                     maxtries--;
                 }
             } else {
-                while ((tp.equals(uuid) || reserved.contains(tp)) && maxtries > 3) {
+                while ((tp.equals(uuid) || reserved.contains(tp)) && maxtries > 0) {
                     tp = ingame.get(new Random().nextInt(ingame.size()));
                     maxtries--;
                 }
@@ -171,25 +172,9 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         if (getAlive().size() == 1) {
 
             Player winner = getAlive().get(0);
-            Bukkit.broadcastMessage(ChatColor.GREEN + ChatColor.BOLD.toString() + winner.getName() + " has won!");
             swap.cancel();
 
-            Bukkit.getOnlinePlayers().forEach((loser) -> loser.teleport(winner));
-
-            new BukkitRunnable() {
-                int i = 5;
-                @Override
-                public void run() {
-                    if (i > 0) {
-                        winner.getWorld().spawnEntity(winner.getLocation(), EntityType.FIREWORK);
-                        i--;
-                    } else {
-                        this.cancel();
-                    }
-                }
-            }.runTaskTimer(this, 0, 20);
         }
-
     }
 
     @EventHandler
