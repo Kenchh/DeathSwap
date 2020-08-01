@@ -8,8 +8,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 public class Swap extends BukkitRunnable {
 
-    private final long interval;
-    private long remaining;
+    public final long interval;
+    public long remaining;
 
     public Swap(long interval) {
         this.interval = interval;

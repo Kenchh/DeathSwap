@@ -2,19 +2,29 @@ package com.reinforcedmc.deathswap;
 
 import com.reinforcedmc.gameapi.GameAPI;
 import com.reinforcedmc.gameapi.GameStatus;
+import com.reinforcedmc.gameapi.events.GamePreStartEvent;
 import com.reinforcedmc.gameapi.events.GameSetupEvent;
 import com.reinforcedmc.gameapi.events.GameStartEvent;
+import com.reinforcedmc.gameapi.scoreboard.UpdateScoreboardEvent;
+import org.apache.commons.io.FileUtils;
 import org.bukkit.*;
-import org.bukkit.entity.EntityType;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.FileUtil;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.*;
 
 public final class DeathSwap extends JavaPlugin implements Listener {
@@ -23,6 +33,10 @@ public final class DeathSwap extends JavaPlugin implements Listener {
     private Swap swap;
 
     private static DeathSwap instance;
+
+    private World world;
+    private Location spawn;
+    private long maxRadius;
 
     @Override
     public void onEnable() {
@@ -39,16 +53,82 @@ public final class DeathSwap extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onSetup(GameSetupEvent e) {
+        createWorld();
+        e.openServer();
+    }
+
+    public void createWorld() {
+
+        if(Bukkit.getWorld("DeathSwap") != null) {
+            Bukkit.unloadWorld("DeathSwap", false);
+        }
+        File folder = new File(Bukkit.getWorldContainer()+"/DeathSwap");
+        folder.delete();
+
+        WorldCreator creator = new WorldCreator("DeathSwap");
+        creator.environment(World.Environment.NORMAL);
+        creator.generateStructures(true);
+        world = creator.createWorld();
+
+        spawn = new Location(world, 0, 0, 0);
+        maxRadius = 250;
+
+    }
+
+    @EventHandler
+    public void onPreStart(GamePreStartEvent e) {
+
+        for (UUID game : GameAPI.getInstance().ingame) {
+
+            Player p = Bukkit.getServer().getPlayer(game);
+            if (p == null || !p.isOnline()) continue;
+
+            boolean notocean = false;
+
+            Location location = Bukkit.getWorld("DeathSwap").getSpawnLocation();
+
+            while(!notocean) {
+                location = new Location(world, 0, 0, 0); // New Location in the right World you want
+                location.setX(spawn.getX() + Math.random() * maxRadius * 2 - maxRadius); // This get a Random with a MaxRange
+                location.setZ(spawn.getZ() + Math.random() * maxRadius * 2 - maxRadius);
+
+                Block highest = world.getHighestBlockAt(location.getBlockX(), location.getBlockZ());
+
+                if(highest.isLiquid()) {
+                    maxRadius += 100;
+                    continue;
+                }
+
+                notocean = true;
+                location.setY(highest.getY() + 1); // Get the Highest Block of the Location for Save Spawn.
+            }
+
+            p.teleport(location);
+
+        }
+
+        new com.reinforcedmc.gameapi.GamePostCountDown().start();
+
+    }
+
+    @EventHandler
     public void onStart(GameStartEvent e) {
         start();
     }
+
 
     public void start() {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (Bukkit.getOnlinePlayers().size() > 1) {
-                    Bukkit.getOnlinePlayers().forEach((p) -> ingame.add(p.getUniqueId()));
+                if (GameAPI.getInstance().ingame.size() > 1) {
+
+                    ingame.clear();
+
+                    for(UUID uuid : GameAPI.getInstance().ingame) {
+                        ingame.add(uuid);
+                    }
 
                     swap = new Swap(15);
                     swap.start();
@@ -57,7 +137,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
                     this.cancel();
                 } else {
-                    update();
+                    GameAPI.getInstance().getAPI().endGame(null);
                 }
             }
         }.runTaskTimer(this, 0, 1);
@@ -71,9 +151,10 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         return instance;
     }
 
+    static HashMap<Player, Player> players = new HashMap<>();
+
     public static void swap() {
 
-        HashMap<Player, Player> players = new HashMap<>();
         HashMap<Player, Location> plocs = new HashMap<>();
         ArrayList<UUID> reserved = new ArrayList<>();
 
@@ -118,13 +199,6 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         return alive;
     }
 
-    @EventHandler
-    public void onMove(PlayerMoveEvent e) {
-        if(GameAPI.getInstance().status == GameStatus.POSTCOUNTDOWN && e.getFrom().distance(e.getTo()) != 0) {
-            e.setCancelled(true);
-        }
-    }
-
     /*
     NETHER CANCEL
      */
@@ -157,6 +231,24 @@ public final class DeathSwap extends JavaPlugin implements Listener {
     }
 
     @EventHandler
+    public void onBreak(BlockBreakEvent e) {
+        if(GameAPI.getInstance().status == GameStatus.POSTCOUNTDOWN || GameAPI.getInstance().status == GameStatus.ENDING) {
+            if(GameAPI.getInstance().ingame.contains(e.getPlayer().getUniqueId())) {
+                e.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlace(BlockPlaceEvent e) {
+        if(GameAPI.getInstance().status == GameStatus.POSTCOUNTDOWN || GameAPI.getInstance().status == GameStatus.ENDING) {
+            if(GameAPI.getInstance().ingame.contains(e.getPlayer().getUniqueId())) {
+                e.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler
     public void onRespawn(PlayerRespawnEvent e) {
 
         if (!getAlive().isEmpty()) {
@@ -175,8 +267,17 @@ public final class DeathSwap extends JavaPlugin implements Listener {
             ingame.remove(p.getUniqueId());
             Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> p.spigot().respawn(), 1L);
 
-            Bukkit.broadcastMessage(ChatColor.RED + ChatColor.BOLD.toString() + p.getName() + " has died! " + ingame.size() + " remaining.");
-            p.setGameMode(GameMode.SPECTATOR);
+            if(getAlive().size() > 1) {
+                if (swap.interval - swap.remaining > 60) {
+                    e.setDeathMessage(ChatColor.RED + ChatColor.BOLD.toString() + p.getName() + " has died! " + ingame.size() + " remaining.");
+                } else {
+                    e.setDeathMessage(ChatColor.RED + ChatColor.BOLD.toString() + p.getName() + " died to " + players.get(p).getName() + "'s trap.");
+                }
+            }
+
+            e.setDeathMessage(null);
+
+            GameAPI.getInstance().getAPI().putInSpectator(p);
 
             update();
         }
@@ -184,18 +285,35 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     private void update() {
 
-        if (getAlive().size() == 1) {
+        if(GameAPI.getInstance().status != GameStatus.INGAME) return;
+
+        if (getAlive().size() <= 1) {
 
             Player winner = getAlive().get(0);
             swap.cancel();
-            ingame.clear();
             GameAPI.getInstance().getAPI().endGame(winner);
 
         }
 
         if(ingame.isEmpty()) {
+
             swap.cancel();
             GameAPI.getInstance().getAPI().endGame(null);
+
+        }
+
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        Player p = e.getPlayer();
+
+        if (!getAlive().isEmpty()) {
+
+            GameAPI.getInstance().getAPI().putInSpectator(p);
+
+            Player toTeleport = getAlive().get(new Random().nextInt(getAlive().size()));
+            p.teleport(toTeleport);
         }
 
     }
@@ -205,5 +323,21 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         if (!ingame.contains(e.getPlayer().getUniqueId())) return;
         ingame.remove(e.getPlayer().getUniqueId());
         update();
+    }
+
+    @EventHandler
+    public void onSBUpdate(UpdateScoreboardEvent e) {
+
+        if (GameAPI.getInstance().currentGame.getName() != "DeathSwap" || GameAPI.getInstance().status != GameStatus.INGAME) {
+            return;
+        }
+
+        String[] scoreboard = {
+                "",
+                String.format("&bPlayers remaining: &f%s", ingame.size()),
+                ""
+        };
+
+        e.getScoreboard().setLines(scoreboard);
     }
 }
