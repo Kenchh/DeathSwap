@@ -267,6 +267,8 @@ public final class DeathSwap extends JavaPlugin implements Listener {
             ingame.remove(p.getUniqueId());
             Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> p.spigot().respawn(), 1L);
 
+            e.setDeathMessage(null);
+
             if(getAlive().size() > 1) {
                 if (swap.interval - swap.remaining > 60) {
                     e.setDeathMessage(ChatColor.RED + ChatColor.BOLD.toString() + p.getName() + " has died! " + ingame.size() + " remaining.");
@@ -274,8 +276,6 @@ public final class DeathSwap extends JavaPlugin implements Listener {
                     e.setDeathMessage(ChatColor.RED + ChatColor.BOLD.toString() + p.getName() + " died to " + players.get(p).getName() + "'s trap.");
                 }
             }
-
-            e.setDeathMessage(null);
 
             GameAPI.getInstance().getAPI().putInSpectator(p);
 
@@ -287,7 +287,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
         if(GameAPI.getInstance().status != GameStatus.INGAME) return;
 
-        if (getAlive().size() <= 1) {
+        if (getAlive().size() == 1) {
 
             Player winner = getAlive().get(0);
             swap.cancel();
