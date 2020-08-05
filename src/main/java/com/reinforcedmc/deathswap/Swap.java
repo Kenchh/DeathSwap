@@ -22,6 +22,26 @@ public class Swap extends BukkitRunnable {
 
     @Override
     public void run() {
+
+        /*
+        if(interval - remaining == 60) {
+            Bukkit.getOnlinePlayers().forEach(p -> p.sendTitle(ChatColor.GOLD + "SPECIAL ROUND", "", 0, 40, 0));
+            Bukkit.getOnlinePlayers().forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1F, 1.1F));
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    new BukkitRunnable() {
+                        int i = 0;
+                        @Override
+                        public void run() {
+                            i++;
+                        }
+                    }.runTaskTimer(DeathSwap.getInstance(), 0, 3L);
+                }
+            }.runTaskLater(DeathSwap.getInstance(), 40L);
+        }
+        */
+
         if (remaining <= 0) {
             Bukkit.broadcastMessage(ChatColor.RED + ChatColor.BOLD.toString() + "Players have been swapped!");
             DeathSwap.swap();
@@ -30,7 +50,19 @@ public class Swap extends BukkitRunnable {
             remaining = interval;
         } else {
 
+            if (remaining == 60) {
+                String text = String.format(ChatColor.RED + ChatColor.BOLD.toString() + "Death Swap will ocurr in %s seconds.", remaining);
+                Bukkit.broadcastMessage(text);
+                Bukkit.getOnlinePlayers().forEach((p) -> p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1F, 1F));
+            }
+
             if (remaining == 30) {
+                String text = String.format(ChatColor.RED + ChatColor.BOLD.toString() + "Death Swap will ocurr in %s seconds.", remaining);
+                Bukkit.broadcastMessage(text);
+                Bukkit.getOnlinePlayers().forEach((p) -> p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1F, 1F));
+            }
+
+            if (remaining == 15) {
                 String text = String.format(ChatColor.RED + ChatColor.BOLD.toString() + "Death Swap will ocurr in %s seconds.", remaining);
                 Bukkit.broadcastMessage(text);
                 Bukkit.getOnlinePlayers().forEach((p) -> p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 1F, 1F));

@@ -38,12 +38,18 @@ public final class DeathSwap extends JavaPlugin implements Listener {
     private Location spawn;
     private long maxRadius;
 
+    final ArrayList<String> specials = new ArrayList<>();
+
     @Override
     public void onEnable() {
         instance = this;
 
         log("Enabled!");
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
+
+        specials.add("Speed Round");
+        specials.add("5 Hearts");
+        specials.add("10 Seconds 1 Creeper");
 
     }
 
@@ -54,23 +60,25 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onSetup(GameSetupEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         createWorld();
         e.openServer();
     }
 
     public void createWorld() {
 
-        if(Bukkit.getWorld("DeathSwap") != null) {
-            Bukkit.unloadWorld("DeathSwap", false);
+        if(Bukkit.getWorld("Game") != null) {
+            Bukkit.unloadWorld("Game", false);
         }
-        File folder = new File(Bukkit.getWorldContainer() + "/DeathSwap");
+        File folder = new File(Bukkit.getWorldContainer() + "/Game");
         try {
             FileUtils.deleteDirectory(folder);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        WorldCreator creator = new WorldCreator("DeathSwap");
+        WorldCreator creator = new WorldCreator("Game");
         creator.environment(World.Environment.NORMAL);
         creator.generateStructures(true);
         world = creator.createWorld();
@@ -82,6 +90,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPreStart(GamePreStartEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
 
         for (UUID game : GameAPI.getInstance().ingame) {
 
@@ -118,6 +127,8 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onStart(GameStartEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         start();
     }
 
@@ -208,11 +219,14 @@ public final class DeathSwap extends JavaPlugin implements Listener {
      */
     @EventHandler
     public void onPortal(PlayerPortalEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         e.setCancelled(true);
     }
 
     @EventHandler
     public void onTeleport(PlayerTeleportEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
 
         if (e.getCause().equals(PlayerTeleportEvent.TeleportCause.END_PORTAL))
             e.setCancelled(true);
@@ -228,6 +242,8 @@ public final class DeathSwap extends JavaPlugin implements Listener {
      */
     @EventHandler
     public void onPvP(EntityDamageByEntityEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         if (!(e.getEntity() instanceof Player)) return;
         if (!(e.getDamager() instanceof Player)) return;
 
@@ -236,6 +252,8 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onBreak(BlockBreakEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         if(GameAPI.getInstance().status == GameStatus.POSTCOUNTDOWN || GameAPI.getInstance().status == GameStatus.ENDING) {
             if(GameAPI.getInstance().ingame.contains(e.getPlayer().getUniqueId())) {
                 e.setCancelled(true);
@@ -245,6 +263,8 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlace(BlockPlaceEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         if(GameAPI.getInstance().status == GameStatus.POSTCOUNTDOWN || GameAPI.getInstance().status == GameStatus.ENDING) {
             if(GameAPI.getInstance().ingame.contains(e.getPlayer().getUniqueId())) {
                 e.setCancelled(true);
@@ -254,6 +274,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onRespawn(PlayerRespawnEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
 
         if (!getAlive().isEmpty()) {
             Player toTeleport = getAlive().get(new Random().nextInt(getAlive().size()));
@@ -264,6 +285,8 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onDie(PlayerDeathEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         Player p = e.getEntity();
 
         if(ingame.contains(p.getUniqueId())) {
@@ -310,6 +333,8 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         Player p = e.getPlayer();
 
         if (!getAlive().isEmpty()) {
@@ -324,6 +349,8 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onLog(PlayerQuitEvent e) {
+        if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
+
         if (!ingame.contains(e.getPlayer().getUniqueId())) return;
         ingame.remove(e.getPlayer().getUniqueId());
         update();
