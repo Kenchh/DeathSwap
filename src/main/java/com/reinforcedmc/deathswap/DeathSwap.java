@@ -63,8 +63,12 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         if(Bukkit.getWorld("DeathSwap") != null) {
             Bukkit.unloadWorld("DeathSwap", false);
         }
-        File folder = new File(Bukkit.getWorldContainer()+"/DeathSwap");
-        folder.delete();
+        File folder = new File(Bukkit.getWorldContainer() + "/DeathSwap");
+        try {
+            FileUtils.deleteDirectory(folder);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         WorldCreator creator = new WorldCreator("DeathSwap");
         creator.environment(World.Environment.NORMAL);
@@ -155,19 +159,19 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
     public static void swap() {
 
+        players.clear();
+
         HashMap<Player, Location> plocs = new HashMap<>();
         ArrayList<UUID> reserved = new ArrayList<>();
 
         for(UUID uuid : ingame) {
             Player p = Bukkit.getPlayer(uuid);
 
-            int maxtries = 3;
             UUID tp = p.getUniqueId();
             if(ingame.size() >= 3) {
                 /* Loop, that searches for a valid player to teleport to. */
-                while ((tp.equals(uuid) || reserved.contains(tp) || (players.containsKey(Bukkit.getPlayer(tp)) && players.get(Bukkit.getPlayer(tp)).getUniqueId() == uuid)) && maxtries > 0) {
+                while ((tp.equals(uuid) || reserved.contains(tp) || (players.containsKey(Bukkit.getPlayer(tp)) && players.get(Bukkit.getPlayer(tp)).getUniqueId() == uuid))) {
                     tp = ingame.get(new Random().nextInt(ingame.size()));
-                    maxtries--;
                 }
             } else {
                 for(Player pp : Bukkit.getOnlinePlayers()) {
