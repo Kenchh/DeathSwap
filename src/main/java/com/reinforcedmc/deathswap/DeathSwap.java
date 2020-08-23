@@ -96,7 +96,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
             boolean notocean = false;
 
-            Location location = Bukkit.getWorld("DeathSwap").getSpawnLocation();
+            Location location = Bukkit.getWorld("Game").getSpawnLocation();
 
             while(!notocean) {
                 location = new Location(world, 0, 0, 0); // New Location in the right World you want
