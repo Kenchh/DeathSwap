@@ -3,8 +3,14 @@ package com.reinforcedmc.deathswap;
 import com.reinforcedmc.gameapi.GameAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+import java.util.Random;
+import java.util.UUID;
 
 public class Swap extends BukkitRunnable {
 
@@ -20,27 +26,33 @@ public class Swap extends BukkitRunnable {
         this.runTaskTimer(DeathSwap.getInstance(), 0, 20);
     }
 
+    int itemdropinterval = 90;
+    int range = 10;
+
     @Override
     public void run() {
 
-        /*
-        if(interval - remaining == 60) {
-            Bukkit.getOnlinePlayers().forEach(p -> p.sendTitle(ChatColor.GOLD + "SPECIAL ROUND", "", 0, 40, 0));
-            Bukkit.getOnlinePlayers().forEach(p -> p.playSound(p.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1F, 1.1F));
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    new BukkitRunnable() {
-                        int i = 0;
-                        @Override
-                        public void run() {
-                            i++;
-                        }
-                    }.runTaskTimer(DeathSwap.getInstance(), 0, 3L);
-                }
-            }.runTaskLater(DeathSwap.getInstance(), 40L);
+        if(remaining % itemdropinterval == 0) {
+            for(UUID uuid : DeathSwap.ingame) {
+                Player p = Bukkit.getPlayer(uuid);
+
+                Vector offset = new Vector();
+
+                int xOff = new Random().nextInt(range) + 1;
+                if (xOff <= range/2) xOff = -xOff;
+
+                offset.setX(xOff);
+                offset.setY(0);
+
+                int zOff = new Random().nextInt(range) + 1;
+                if (zOff <= range/2) zOff = -zOff;
+
+                offset.setZ(zOff);
+
+                GameItem randomItem = DeathSwap.getInstance().getGameItemManager().gameItems.get(new Random().nextInt(DeathSwap.getInstance().getGameItemManager().gameItems.size()));
+                randomItem.drop(new Location(p.getLocation().getWorld(), p.getLocation().getX() + xOff, 200, p.getLocation().getZ() + zOff));
+            }
         }
-        */
 
         if (remaining <= 0) {
             Bukkit.broadcastMessage(ChatColor.RED + ChatColor.BOLD.toString() + "Players have been swapped!");

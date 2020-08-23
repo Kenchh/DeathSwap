@@ -38,7 +38,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
     private Location spawn;
     private long maxRadius;
 
-    final ArrayList<String> specials = new ArrayList<>();
+    private GameItemManager gameItemManager;
 
     @Override
     public void onEnable() {
@@ -47,10 +47,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         log("Enabled!");
         Bukkit.getServer().getPluginManager().registerEvents(this, this);
 
-        specials.add("Speed Round");
-        specials.add("5 Hearts");
-        specials.add("10 Seconds 1 Creeper");
-
+        this.gameItemManager = new GameItemManager();
     }
 
     @Override
@@ -329,6 +326,10 @@ public final class DeathSwap extends JavaPlugin implements Listener {
 
         }
 
+    }
+
+    public GameItemManager getGameItemManager() {
+        return gameItemManager;
     }
 
     @EventHandler
