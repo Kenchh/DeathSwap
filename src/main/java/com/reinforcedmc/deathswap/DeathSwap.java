@@ -2,6 +2,7 @@ package com.reinforcedmc.deathswap;
 
 import com.reinforcedmc.gameapi.GameAPI;
 import com.reinforcedmc.gameapi.GameStatus;
+import com.reinforcedmc.gameapi.api.GameWorld;
 import com.reinforcedmc.gameapi.events.GamePreStartEvent;
 import com.reinforcedmc.gameapi.events.GameSetupEvent;
 import com.reinforcedmc.gameapi.events.GameStartEvent;
@@ -33,11 +34,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
     private Swap swap;
 
     private static DeathSwap instance;
-
-    private World world;
-    private Location spawn;
-    private long maxRadius;
-
+    private GameWorld gameWorld;
     private GameItemManager gameItemManager;
 
     @Override
@@ -59,65 +56,15 @@ public final class DeathSwap extends JavaPlugin implements Listener {
     public void onSetup(GameSetupEvent e) {
         if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
 
-        createWorld();
+        gameWorld = new GameWorld("Game", 250);
         e.openServer();
-    }
-
-    public void createWorld() {
-
-        if(Bukkit.getWorld("Game") != null) {
-            Bukkit.unloadWorld("Game", false);
-        }
-        File folder = new File(Bukkit.getWorldContainer() + "/Game");
-        try {
-            FileUtils.deleteDirectory(folder);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        WorldCreator creator = new WorldCreator("Game");
-        creator.environment(World.Environment.NORMAL);
-        creator.generateStructures(true);
-        world = creator.createWorld();
-
-        spawn = new Location(world, 0, 0, 0);
-        maxRadius = 250;
-
     }
 
     @EventHandler
     public void onPreStart(GamePreStartEvent e) {
         if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
 
-        for (UUID game : GameAPI.getInstance().ingame) {
-
-            Player p = Bukkit.getServer().getPlayer(game);
-            if (p == null || !p.isOnline()) continue;
-
-            boolean notocean = false;
-
-            Location location = Bukkit.getWorld("Game").getSpawnLocation();
-
-            while(!notocean) {
-                location = new Location(world, 0, 0, 0); // New Location in the right World you want
-                location.setX(spawn.getX() + Math.random() * maxRadius * 2 - maxRadius); // This get a Random with a MaxRange
-                location.setZ(spawn.getZ() + Math.random() * maxRadius * 2 - maxRadius);
-
-                Block highest = world.getHighestBlockAt(location.getBlockX(), location.getBlockZ());
-
-                if(highest.isLiquid()) {
-                    maxRadius += 100;
-                    continue;
-                }
-
-                notocean = true;
-                location.setY(highest.getY() + 1); // Get the Highest Block of the Location for Save Spawn.
-            }
-
-            p.teleport(location);
-
-        }
-
+        gameWorld.teleportPlayers();
         new com.reinforcedmc.gameapi.GamePostCountDown().start();
 
     }
@@ -142,7 +89,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
                         ingame.add(uuid);
                     }
 
-                    swap = new Swap(15);
+                    swap = new Swap(5);
                     swap.start();
 
                     Bukkit.broadcastMessage(GameAPI.getInstance().currentGame.getPrefix() + ChatColor.GRAY + " has started. " + ChatColor.YELLOW + "Last one to survive wins!");
@@ -163,41 +110,29 @@ public final class DeathSwap extends JavaPlugin implements Listener {
         return instance;
     }
 
-    static HashMap<Player, Player> players = new HashMap<>();
+    static HashMap<Player, PlayerLoc> players = new HashMap<>();
 
     public static void swap() {
 
-        players.clear();
+        Collections.shuffle(ingame);;
 
-        HashMap<Player, Location> plocs = new HashMap<>();
-        ArrayList<UUID> reserved = new ArrayList<>();
+        int i = 0;
+        for(UUID id : ingame) {
+            Player p = Bukkit.getPlayer(id);
 
-        for(UUID uuid : ingame) {
-            Player p = Bukkit.getPlayer(uuid);
-
-            UUID tp = p.getUniqueId();
-            if(ingame.size() >= 3) {
-                /* Loop, that searches for a valid player to teleport to. */
-                while ((tp.equals(uuid) || reserved.contains(tp) || (players.containsKey(Bukkit.getPlayer(tp)) && players.get(Bukkit.getPlayer(tp)).getUniqueId() == uuid))) {
-                    tp = ingame.get(new Random().nextInt(ingame.size()));
-                }
+            if(i < ingame.size() - 1) {
+                players.put(p, new PlayerLoc(Bukkit.getPlayer(ingame.get(i+1)), Bukkit.getPlayer(ingame.get(i+1)).getLocation()));
             } else {
-                for(Player pp : Bukkit.getOnlinePlayers()) {
-                    if(!p.getUniqueId().equals(pp.getUniqueId())) {
-                        tp = pp.getUniqueId();
-                        break;
-                    }
-                }
+                players.put(Bukkit.getPlayer(ingame.get(i)), new PlayerLoc(Bukkit.getPlayer(ingame.get(0)), Bukkit.getPlayer(ingame.get(0)).getLocation()));
             }
-            players.put(p, Bukkit.getPlayer(tp));
-            reserved.add(tp);
-            plocs.put(p, Bukkit.getPlayer(tp).getLocation());
+
+            i++;
         }
 
-        for(Player p : plocs.keySet()) {
-            p.teleport(plocs.get(p));
+        for(Player p : players.keySet()) {
+            Location tp = players.get(p).loc;
+            p.teleport(tp);
         }
-
     }
 
     public static ArrayList<Player> getAlive() {
@@ -297,7 +232,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
                 if (swap.interval - swap.remaining > 60) {
                     e.setDeathMessage(ChatColor.RED + ChatColor.BOLD.toString() + p.getName() + " has died! " + ingame.size() + " remaining.");
                 } else {
-                    e.setDeathMessage(ChatColor.RED + ChatColor.BOLD.toString() + p.getName() + " died to " + players.get(p).getName() + "'s trap.");
+                    e.setDeathMessage(ChatColor.RED + ChatColor.BOLD.toString() + p.getName() + " died to " + players.get(p).p.getName() + "'s trap.");
                 }
             }
 
