@@ -83,6 +83,11 @@
                                         <include name="target/*jar-with-dependencies.jar" />
                                     </fileset>
                                 </copy>
+                                <copy todir="../../Network/Testserver15 2/plugins" overwrite="true" flatten="true">
+                                    <fileset dir="${basedir}" includes="*.bat" >
+                                        <include name="target/*jar-with-dependencies.jar" />
+                                    </fileset>
+                                </copy>
                             </target>
                         </configuration>
                         <goals>
