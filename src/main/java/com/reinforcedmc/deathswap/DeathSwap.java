@@ -56,7 +56,7 @@ public final class DeathSwap extends JavaPlugin implements Listener {
     public void onSetup(GameSetupEvent e) {
         if(!GameAPI.getInstance().currentGame.getName().equalsIgnoreCase("DeathSwap")) return;
 
-        gameWorld = new GameWorld("Game", 250);
+        gameWorld = new GameWorld("Game", 250, false, false);
         e.openServer();
     }
 
